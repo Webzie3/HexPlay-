@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Premium Exclusive Content</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        body, html { margin: 0; padding: 0; height: 100%; background: #000; font-family: 'Poppins', sans-serif; overflow: hidden; user-select: none; -webkit-user-select: none; }
+        
+        /* Blurred Background Image */
+        .video-bg { width: 100%; height: 100%; object-fit: cover; filter: blur(15px); opacity: 0.4; position: absolute; z-index: 1; transition: filter 0.5s ease; pointer-events: none;}
+        
+        /* Strict Lock Modal */
+        .strict-lock { position: fixed; inset: 0; z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(0,0,0,0.85); backdrop-filter: blur(10px); }
+        .modal { background: #121219; padding: 30px; border-radius: 15px; border: 1px solid #E63946; text-align: center; width: 85%; max-width: 320px; box-shadow: 0 0 40px rgba(230,57,70,0.3); }
+        
+        .inp-pin { width: 100%; padding: 12px; margin-bottom: 15px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2); background: rgba(0,0,0,0.5); color: white; font-size: 1.2rem; text-align: center; font-weight: bold; font-family: 'Poppins', sans-serif; outline: none; transition: border 0.3s;}
+        .inp-pin:focus { border-color: #E63946; }
+        
+        .btn { padding: 14px; margin: 8px 0; width: 100%; border-radius: 8px; border: none; font-size: 1rem; font-weight: 600; cursor: pointer; transition: transform 0.2s; font-family: 'Poppins', sans-serif; display: flex; align-items: center; justify-content: center; gap: 8px;}
+        .btn:hover { transform: scale(1.03); }
+        .btn-pin { background: #E63946; color: white; }
+        .btn-pay { background: #2DC653; color: white; }
+        .btn-back { background: rgba(255,255,255,0.1); color: white; margin-top: 15px; padding: 10px; font-size: 0.85rem;}
+
+        /* Anti-Recording Blackout Screen */
+        #securityBlackout { display: none; position: fixed; inset: 0; background: #000; z-index: 9999999; flex-direction: column; align-items: center; justify-content: center; color: #E63946; font-weight: bold; font-size: 1.2rem; text-align: center; padding: 20px;}
+        
+        /* Fullscreen Player Container */
+        #mediaContainer { display: none; width: 100%; height: 100%; position: absolute; z-index: 50; background: #000; }
+        
+        /* Video and Image specific styling */
+        #premiumPlayer { width: 100%; height: 100%; border: none; display: none; }
+        #premiumImageGallery { width: 100%; height: 100%; display: none; align-items: center; justify-content: center; overflow: hidden; position: relative; }
+        #currentImage { max-width: 100%; max-height: 100%; object-fit: contain; pointer-events: none; } /* Disable image dragging */
+        
+        /* Gallery Controls */
+        .gallery-controls { position: absolute; bottom: 30px; left: 0; right: 0; display: flex; justify-content: center; gap: 20px; z-index: 60; }
+        .gal-btn { background: rgba(230,57,70,0.8); color: white; border: none; width: 50px; height: 50px; border-radius: 50%; font-size: 1.5rem; cursor: pointer; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(5px); }
+        .img-counter { position: absolute; top: 20px; right: 20px; background: rgba(0,0,0,0.6); color: white; padding: 5px 15px; border-radius: 20px; font-size: 0.9rem; backdrop-filter: blur(5px); }
+        
+        /* Close Button for unlocked content */
+        .close-media-btn { position: absolute; top: 20px; left: 20px; background: rgba(0,0,0,0.6); border: 1px solid rgba(255,255,255,0.2); color: white; width: 40px; height: 40px; border-radius: 50%; font-size: 1.2rem; cursor: pointer; z-index: 100; display: none; align-items: center; justify-content: center; }
+
+        /* Loading Text */
+        #loadingTxt { color: #E63946; font-size: 1.2rem; font-weight: bold; position: absolute; z-index: 10000; display: none;}
+        
+        /* Overlay to block developer tools clicks */
+        .security-shield { position: absolute; inset: 0; z-index: 99; pointer-events: none; }
+    </style>
+</head>
+<body>
+
+    <!-- Security Blackout -->
+    <div id="securityBlackout">
+        <span style="font-size: 3rem;">🚫</span><br>
+        <span>SCREEN CAPTURE BLOCKED</span>
+        <p style="color: #6E6E98; font-size: 0.85rem; margin-top: 10px;">Recording or taking screenshots of premium content is strictly prohibited.</p>
+    </div>
+
+    <div id="loadingTxt">Loading Secure Environment...</div>
+
+    <!-- Dynamic Background Image -->
+    <img src="" class="video-bg" id="bgMedia">
+
+    <!-- Strict Lock Screen -->
+    <div class="strict-lock" id="lockScreen" style="display:none;">
+        <div class="modal">
+            <h2 style="color: #E63946; margin-top: 0; font-weight: 800;" id="modalTitle">🚫 PREMIUM LOCKED</h2>
+            <p style="color: #ccc; font-size: 0.85rem; margin-bottom: 20px;">This exclusive content requires a Special PIN to unlock.</p>
+            
+            <input type="text" id="userPinInput" class="inp-pin" placeholder="Enter PIN" autocomplete="off" style="text-transform: uppercase;">
+            
+            <button class="btn btn-pin" id="verifyBtn" onclick="verifyFirebasePin()">🔑 Unlock Content</button>
+            <button class="btn btn-pay" onclick="goToPayment()">💳 Pay to Get Auto-PIN</button>
+            <button class="btn btn-back" onclick="window.location.href='index.html'">⬅ Return to Home</button>
+        </div>
+    </div>
+
+    <!-- Fullscreen Media Container -->
+    <button class="close-media-btn" id="closeMediaBtn" onclick="closeMedia()">✖</button>
+    <div id="mediaContainer">
+        
+        <!-- Shield against inspect element clicks over iframe -->
+        <div class="security-shield"></div>
+        
+        <!-- Hidden Video Player (Using Iframe) -->
+        <iframe id="premiumPlayer" allowfullscreen allow="autoplay; fullscreen"></iframe>
+        
+        <!-- Hidden Image Gallery -->
+        <div id="premiumImageGallery">
+            <span class="img-counter" id="imgCounter">1 / 1</span>
+            <img id="currentImage" src="">
+            <div class="gallery-controls" id="galControls" style="display: none;">
+                <button class="gal-btn" onclick="changeImage(-1)">◀</button>
+                <button class="gal-btn" onclick="changeImage(1)">▶</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase SDK Integration -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+        import { getDatabase, ref, get, update } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCTfvrtZuHXk3RW91Dcwpbghhq--D6X2s8",
+            authDomain: "inshelp-f2cba.firebaseapp.com",
+            databaseURL: "https://inshelp-f2cba-default-rtdb.firebaseio.com",
+            projectId: "inshelp-f2cba"
+        };
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        const WORKER_URL = "https://shy-heart-bf9d.ekgf2003.workers.dev/?url=";
+
+        // 1. Get Target Content ID from URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const targetVideoId = urlParams.get('id');
+        let mediaData = null; 
+        let imageList = [];
+        let currentImageIdx = 0;
+
+        if (!targetVideoId) {
+            window.location.href = 'index.html'; 
+        }
+
+        // 2. Fetch Details & Set UI
+        document.getElementById('loadingTxt').style.display = 'block';
+        get(ref(db, `videos/${targetVideoId}`)).then(snap => {
+            document.getElementById('loadingTxt').style.display = 'none';
+            if(snap.exists()) {
+                mediaData = snap.val();
+                document.getElementById('bgMedia').src = mediaData.imageUrl || 'https://via.placeholder.com/800x600/181828/E63946?text=Premium';
+                
+                if(mediaData.type === 'image') {
+                    document.getElementById('modalTitle').innerText = "🖼️ GALLERY LOCKED";
+                }
+
+                document.getElementById('lockScreen').style.display = 'flex';
+            } else {
+                alert("Content not found!");
+                window.location.href = 'index.html';
+            }
+        }).catch(()=> { window.location.href = 'index.html'; });
+
+        // --- UNIFIED HYBRID ID SYSTEM (Same as Index & Support) ---
+        function getDeviceId() {
+            if (window.AndroidInterface && window.AndroidInterface.getRootId) {
+                let rootId = "APP-" + window.AndroidInterface.getRootId();
+                localStorage.setItem('hotfake_uid', rootId);
+                return rootId;
+            }
+
+            let savedId = localStorage.getItem('hotfake_uid');
+            if (savedId) return savedId;
+
+            const cores = navigator.hardwareConcurrency || 2;
+            const ram = navigator.deviceMemory || 2;
+            const ua = navigator.userAgent;
+            let os = "UNK";
+            if (/Windows/i.test(ua)) os = "WIN"; 
+            else if (/Android/i.test(ua)) os = "AND"; 
+            else if (/iP(hone|od|ad)/i.test(ua)) os = "IOS";
+            else if (/Mac/i.test(ua)) os = "MAC";
+
+            let canvasHash = "0";
+            try {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                ctx.textBaseline = "top"; ctx.font = "14px 'Arial'"; ctx.fillStyle = "#f60";
+                ctx.fillRect(125,1,62,20); ctx.fillStyle = "#069"; ctx.fillText("HotFake Root", 2, 15);
+                ctx.fillStyle = "rgba(102, 204, 0, 0.7)"; ctx.fillText("Device", 4, 17);
+                const dataURL = canvas.toDataURL();
+                let hash = 0;
+                for (let i = 0; i < dataURL.length; i++) { hash = ((hash << 5) - hash) + dataURL.charCodeAt(i); hash |= 0; }
+                canvasHash = Math.abs(hash).toString(36);
+            } catch(e) {}
+
+            const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
+            const rawString = `${os}-${cores}-${ram}-${canvasHash}-${tz}`;
+            let finalHash = 0; 
+            for(let i=0; i<rawString.length; i++) { finalHash = ((finalHash<<5)-finalHash)+rawString.charCodeAt(i); }
+            
+            let newId = `${os}-${Math.abs(finalHash).toString(36).toUpperCase()}`;
+            localStorage.setItem('hotfake_uid', newId);
+            return newId;
+        }
+
+        const currentDeviceId = getDeviceId();
+
+        // Environment Detection for Strict Filters
+        const ua = navigator.userAgent;
+        let currentOS = "Unknown";
+        if (/Windows/i.test(ua)) currentOS = "Windows"; 
+        else if (/Mac OS X/i.test(ua)) currentOS = "MacOS"; 
+        else if (/Android/i.test(ua)) currentOS = "Android"; 
+        else if (/Linux/i.test(ua)) currentOS = "Linux"; 
+        else if (/iP(hone|od|ad)/i.test(ua)) currentOS = "iOS";
+
+        let currentBrowser = "Unknown";
+        if (/Edg/i.test(ua)) currentBrowser = "Edge"; 
+        else if (/OPR/i.test(ua)) currentBrowser = "Opera"; 
+        else if (/Chrome/i.test(ua)) currentBrowser = "Chrome"; 
+        else if (/Safari/i.test(ua) && !/Chrome/i.test(ua)) currentBrowser = "Safari"; 
+        else if (/Firefox/i.test(ua)) currentBrowser = "Firefox";
+
+        let currentDeviceType = "Desktop";
+        if (/Tablet|iPad/i.test(ua)) currentDeviceType = "Tablet"; 
+        else if (/Mobile|Android|iP(hone|od)/i.test(ua)) currentDeviceType = "Mobile";
+
+
+        // 3. FIXED & SECURE PIN VERIFICATION LOGIC
+        window.verifyFirebasePin = async function() {
+            const pin = document.getElementById('userPinInput').value.trim().toUpperCase();
+            const btn = document.getElementById('verifyBtn');
+            
+            if(!pin) { alert("Please enter a PIN."); return; }
+            
+            btn.innerText = "Checking Security...";
+            btn.style.opacity = "0.7";
+            btn.disabled = true;
+            
+            try {
+                const pinRef = ref(db, `premium_pins/${pin}`);
+                const snapshot = await get(pinRef);
+                
+                if (snapshot.exists()) {
+                    const pinData = snapshot.val();
+                    
+                    // A. Check Usage Limit
+                    if (pinData.limit <= 0) {
+                        alert("❌ This PIN has expired or usage limit reached.");
+                        resetBtn(); return;
+                    }
+
+                    // B. Check Specific Key Types
+                    if (pinData.type === 'specific' && pinData.targetVideo !== "ALL" && pinData.targetVideo !== targetVideoId) {
+                        alert("❌ This PIN is not valid for this specific content.");
+                        resetBtn(); return;
+                    }
+                    if (pinData.type === 'all_videos' && mediaData.type === 'image') {
+                        alert("❌ This is a Video Pass. Cannot be used for Image Galleries.");
+                        resetBtn(); return;
+                    }
+                    if (pinData.type === 'all_images' && mediaData.type !== 'image') {
+                        alert("❌ This is an Image Pass. Cannot be used for Videos.");
+                        resetBtn(); return;
+                    }
+
+                    // C. Advanced Target Filters (Only check if restricted)
+                    if (pinData.targetUser && pinData.targetUser !== "ALL" && pinData.targetUser !== currentDeviceId) {
+                        alert("❌ This PIN is restricted to a specific user.");
+                        resetBtn(); return;
+                    }
+
+                    if (pinData.allowedOS && pinData.allowedOS !== "ANY" && !pinData.allowedOS.includes(currentOS)) {
+                        alert(`❌ OS Denied. This PIN only works on: ${pinData.allowedOS.join(', ')}`);
+                        resetBtn(); return;
+                    }
+
+                    if (pinData.allowedBrowsers && pinData.allowedBrowsers !== "ANY" && !pinData.allowedBrowsers.includes(currentBrowser)) {
+                        alert(`❌ Browser Denied. Please use: ${pinData.allowedBrowsers.join(', ')}`);
+                        resetBtn(); return;
+                    }
+
+                    if (pinData.allowedDevices && pinData.allowedDevices !== "ANY" && !pinData.allowedDevices.includes(currentDeviceType)) {
+                        alert(`❌ Device Blocked. This PIN is for ${pinData.allowedDevices.join(', ')} only.`);
+                        resetBtn(); return;
+                    }
+                    
+                    // SUCCESS! Mark key as used
+                    await update(pinRef, { limit: pinData.limit - 1 });
+                    
+                    unlockAndPlayContent();
+                    
+                } else {
+                    alert("❌ Invalid PIN! Please check and try again.");
+                    resetBtn();
+                }
+            } catch (error) {
+                alert("Network Error connecting to server.");
+                resetBtn();
+            }
+        };
+
+        function resetBtn() {
+            const btn = document.getElementById('verifyBtn');
+            btn.innerText = "🔑 Unlock Content";
+            btn.style.opacity = "1";
+            btn.disabled = false;
+        }
+
+        // 4. Unlock Content (Handle Video vs Image)
+        async function unlockAndPlayContent() {
+            document.getElementById('lockScreen').style.display = 'none';
+            document.getElementById('bgMedia').style.display = 'none';
+            document.getElementById('mediaContainer').style.display = 'block';
+            document.getElementById('closeMediaBtn').style.display = 'flex';
+
+            if (mediaData.type === 'image') {
+                // IMAGE GALLERY LOGIC
+                document.getElementById('premiumImageGallery').style.display = 'flex';
+                
+                imageList.push(mediaData.imageUrl);
+                if(mediaData.parts) {
+                    mediaData.parts.forEach(p => {
+                        if(p.image || p.url) imageList.push(p.image || p.url);
+                    });
+                }
+                
+                if(imageList.length > 1) {
+                    document.getElementById('galControls').style.display = 'flex';
+                }
+                updateGalleryUI();
+
+            } else {
+                // VIDEO LOGIC
+                const player = document.getElementById('premiumPlayer');
+                player.style.display = 'block';
+                let videoUrl = mediaData.videoUrl;
+
+                if(!videoUrl && mediaData.parts && mediaData.parts.length > 0) {
+                    videoUrl = mediaData.parts[0].url;
+                }
+
+                if (!videoUrl.match(/\.(mp4|m3u8)$/i) && !videoUrl.includes('hdhub4u')) {
+                    try {
+                        const res = await fetch(WORKER_URL + encodeURIComponent(videoUrl));
+                        const data = await res.json();
+                        if(data.success && data.direct_url) videoUrl = data.direct_url;
+                    } catch(e){}
+                }
+
+                if (videoUrl.includes('hdhub4u')) { videoUrl = videoUrl + '&no-ads=true&hide-controls=true'; }
+                player.src = videoUrl;
+            }
+        }
+
+        window.changeImage = function(direction) {
+            currentImageIdx += direction;
+            if(currentImageIdx < 0) currentImageIdx = imageList.length - 1;
+            if(currentImageIdx >= imageList.length) currentImageIdx = 0;
+            updateGalleryUI();
+        }
+
+        function updateGalleryUI() {
+            document.getElementById('currentImage').src = imageList[currentImageIdx];
+            document.getElementById('imgCounter').innerText = `${currentImageIdx + 1} / ${imageList.length}`;
+        }
+
+        window.closeMedia = function() {
+            window.location.href = 'index.html';
+        }
+
+        window.goToPayment = function() {
+            window.location.href = `payment.html?vid=${targetVideoId}&dev=${currentDeviceId}&type=${mediaData.type}`;
+        };
+
+        // 6. STRICT LOCK - Block Back Button
+        history.pushState(null, null, location.href);
+        window.onpopstate = function () { history.go(1); };
+
+        // 7. ENHANCED ANTI-SCREEN RECORD & SECURITY
+        document.addEventListener("visibilitychange", function() {
+            if (document.hidden) {
+                document.getElementById('securityBlackout').style.display = 'flex';
+                document.getElementById('mediaContainer').style.opacity = '0'; 
+            } else {
+                document.getElementById('securityBlackout').style.display = 'none';
+                document.getElementById('mediaContainer').style.opacity = '1';
+            }
+        });
+
+        window.addEventListener("blur", function() {
+            document.getElementById('securityBlackout').style.display = 'flex';
+            document.getElementById('mediaContainer').style.opacity = '0';
+        });
+
+        window.addEventListener("focus", function() {
+            document.getElementById('securityBlackout').style.display = 'none';
+            document.getElementById('mediaContainer').style.opacity = '1';
+        });
+
+        // Block Right Click, F12, Inspect Element
+        document.addEventListener('contextmenu', event => event.preventDefault());
+        document.onkeydown = function(e) {
+            if(e.keyCode == 123) return false;
+            if(e.ctrlKey && e.shiftKey && e.keyCode == 'I'.charCodeAt(0)) return false;
+            if(e.ctrlKey && e.shiftKey && e.keyCode == 'J'.charCodeAt(0)) return false;
+            if(e.ctrlKey && e.keyCode == 'U'.charCodeAt(0)) return false;
+        };
+    </script>
+</body>
+</html>
