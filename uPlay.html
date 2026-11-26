@@ -66,6 +66,10 @@
         padding-bottom: 82px;
       }
 
+      body.has-mini-player {
+        padding-bottom: 146px;
+      }
+
       header {
         position: sticky;
         top: 0;
@@ -207,6 +211,123 @@
         background: var(--red);
         color: #fff;
         border-color: var(--red);
+      }
+
+      .audio-mode-pill {
+        background: rgba(45, 198, 83, 0.12);
+        color: var(--green);
+        border: 1px solid rgba(45, 198, 83, 0.35);
+        padding: 7px 14px;
+        border-radius: 999px;
+        font-family: var(--font);
+        font-size: 0.76rem;
+        font-weight: 600;
+        cursor: pointer;
+        white-space: nowrap;
+        display: none;
+        align-items: center;
+        gap: 6px;
+        transition: all 0.2s ease;
+      }
+
+      .audio-mode-pill.active {
+        background: var(--green);
+        color: #07070F;
+        border-color: var(--green);
+      }
+
+      .music-mini-player {
+        position: fixed;
+        left: 12px;
+        right: 12px;
+        bottom: calc(68px + env(safe-area-inset-bottom));
+        z-index: 998;
+        background: rgba(18, 18, 32, 0.96);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 16px;
+        padding: 10px 14px;
+        display: none;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        box-shadow: 0 14px 36px rgba(0, 0, 0, 0.65);
+        backdrop-filter: blur(18px);
+        -webkit-backdrop-filter: blur(18px);
+      }
+
+      .music-mini-meta {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        min-width: 0;
+        flex: 1;
+      }
+
+      .music-mini-thumb {
+        width: 44px;
+        height: 44px;
+        border-radius: 10px;
+        object-fit: cover;
+        background: var(--surf2);
+        flex-shrink: 0;
+      }
+
+      .music-mini-text {
+        min-width: 0;
+        flex: 1;
+      }
+
+      .music-mini-title {
+        font-size: 0.86rem;
+        font-weight: 600;
+        color: #fff;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .music-mini-sub {
+        font-size: 0.72rem;
+        color: var(--sub);
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .music-mini-controls {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-shrink: 0;
+      }
+
+      .mini-ctrl-btn {
+        border: 1px solid var(--border);
+        background: rgba(255, 255, 255, 0.08);
+        color: #fff;
+        height: 34px;
+        padding: 0 11px;
+        border-radius: 999px;
+        font-family: var(--font);
+        font-size: 0.75rem;
+        font-weight: 600;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+        transition: all 0.2s ease;
+      }
+
+      .mini-ctrl-btn:hover {
+        border-color: var(--red);
+        background: rgba(230, 57, 70, 0.2);
+      }
+
+      .mini-ctrl-btn.primary {
+        background: var(--red);
+        border-color: var(--red);
+        min-width: 66px;
       }
 
       .main {
@@ -388,7 +509,6 @@
         color: var(--sub);
       }
 
-      /* In-App Space & Admin Views */
       .space-view {
         display: none;
         max-width: 1040px;
@@ -940,14 +1060,43 @@
       }
 
       #iframePlayer {
-        width: 300vw;
-        height: 300vh;
+        width: 100%;
+        height: 100%;
         position: absolute;
         top: 50%;
         left: 50%;
         border: none;
         z-index: 1;
-        transform: translate(-50%, -50%) scale(0.3833);
+        transform-origin: center center;
+        transform: translate(-50%, -50%);
+      }
+
+      #nativePlayer {
+        width: 100%;
+        height: 100%;
+        position: relative;
+        z-index: 2;
+        background: #000;
+        object-fit: contain;
+        transform-origin: center center;
+        transition: transform 0.22s ease, width 0.22s ease, height 0.22s ease;
+      }
+
+      /* Full-play mode when rotated 90 or 270 degrees */
+      .player-wrapper.rotated-full #nativePlayer {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: var(--rot-w, 100vh);
+        height: var(--rot-h, 100vw);
+        max-width: none;
+        max-height: none;
+        object-fit: cover;
+      }
+
+      .player-wrapper.rotated-full #iframePlayer {
+        width: var(--rot-w, 100vh);
+        height: var(--rot-h, 100vw);
       }
 
       #adContainer {
@@ -1081,7 +1230,8 @@
         transition: background 0.2s;
       }
 
-      .ui-rotate-btn:hover {
+      .ui-rotate-btn:hover,
+      .ui-rotate-btn.active {
         background: var(--red);
         border-color: var(--red);
       }
@@ -1281,6 +1431,9 @@
           <button type="button" class="cat-pill" data-cat="series" onclick="setCategoryFilter('series')">Shows & Series</button>
           <button type="button" class="cat-pill" data-cat="music" onclick="setCategoryFilter('music')">Music</button>
           <button type="button" class="cat-pill" data-cat="premium" onclick="setCategoryFilter('premium')">👑 Premium</button>
+          <button type="button" class="audio-mode-pill" id="audioOnlyPill" onclick="toggleAudioOnlyMode()">
+            🎧 Audio-Only: <span id="audioOnlyState">ON</span>
+          </button>
         </div>
       </div>
     </section>
@@ -1399,7 +1552,6 @@
             <button type="button" class="tab-btn" id="admTabSupport" onclick="switchAdminTab('support')">🎫 Support & Users</button>
         </div>
 
-        <!-- Media Tab -->
         <div id="admPaneMedia">
             <div class="admin-panel-box">
                 <h3>Add Title / Series</h3>
@@ -1427,7 +1579,6 @@
             </div>
         </div>
 
-        <!-- Ads & App Tab -->
         <div id="admPaneAds" style="display:none;">
             <div class="admin-panel-box">
                 <h3>Pre-Roll Ad & App Settings</h3>
@@ -1449,7 +1600,6 @@
             </div>
         </div>
 
-        <!-- Support & Users Tab -->
         <div id="admPaneSupport" style="display:none;">
             <div class="admin-panel-box">
                 <h3>Support Tickets</h3>
@@ -1470,6 +1620,26 @@
         </div>
     </div>
 </section>
+
+<!-- Music Mini-Player -->
+<div class="music-mini-player" id="musicMiniPlayer">
+  <audio id="musicAudioPlayer" preload="auto"></audio>
+  <div class="music-mini-meta">
+    <img id="miniThumb" class="music-mini-thumb" src="" alt="Track cover" onerror="this.style.display='none'">
+    <div class="music-mini-text">
+      <div class="music-mini-title" id="miniTrackTitle">Track Title</div>
+      <div class="music-mini-sub">
+        <span id="miniTrackMode">Audio-Only Mode</span>
+        <span id="miniTrackStatus">Ready</span>
+      </div>
+    </div>
+  </div>
+  <div class="music-mini-controls">
+    <button type="button" class="mini-ctrl-btn primary" id="miniPlayPauseBtn" onclick="toggleMiniPlayPause()">⏸ Pause</button>
+    <button type="button" class="mini-ctrl-btn" id="miniModeBtn" onclick="toggleAudioOnlyMode()" title="Toggle Audio-Only Mode">🎧</button>
+    <button type="button" class="mini-ctrl-btn" id="miniCloseBtn" onclick="closeMusicMiniPlayer()" title="Close Mini-Player">✕</button>
+  </div>
+</div>
 
 <footer>
     <div class="social-links" id="footerSocials"></div>
@@ -1515,13 +1685,13 @@
            <div class="glass-top">
                <div class="top-left-group">
                    <button type="button" class="ui-back-btn" id="uiBackBtn">⬅</button>
-                   <button type="button" class="ui-rotate-btn" id="uiRotateBtn" title="Rotate Video">↻ <span id="rotateDegLabel">0°</span></button>
+                   <button type="button" class="ui-rotate-btn" id="uiRotateBtn" title="Rotate & Full-Play">↻ <span id="rotateDegLabel">0°</span></button>
                    <span class="overlay-title" id="overlayTitle">Title</span>
                </div>
            </div>
            <div class="watermark-logo">HEXPLAY</div>
        </div>
-       <video id="nativePlayer" controls playsinline preload="auto" style="display:none; width:100%; height:100%; position:relative; z-index:2; background:#000;"></video>
+       <video id="nativePlayer" controls playsinline preload="auto" style="display:none;"></video>
        <iframe id="iframePlayer" allowfullscreen allow="autoplay; fullscreen"></iframe>
     </div>
   </div>
@@ -1554,6 +1724,7 @@
   let currentSpaceMode = "downloads";
   let requiredByAdmin = { location: true, camera: false };
   let isAdminUnlocked = sessionStorage.getItem("hexplay_admin_auth") === "1";
+  let audioOnlyMode = localStorage.getItem("hexplay_audio_only") !== "false";
 
   const urlParams = new URLSearchParams(window.location.search);
   let filterPremium = urlParams.get("filter") === "premium";
@@ -1580,6 +1751,30 @@
           return false;
       }
   }
+
+  function isMusicItem(v) {
+      const c = String(v.category || v.genre || v.title || "").toLowerCase();
+      return c.includes("music") || c.includes("song") || c.includes("audio") || c.includes("track");
+  }
+
+  function syncAudioOnlyUi() {
+      const pill = document.getElementById("audioOnlyPill");
+      const stateLabel = document.getElementById("audioOnlyState");
+      const modeLabel = document.getElementById("miniTrackMode");
+      if (!pill) return;
+
+      pill.style.display = (activeCategory === "music") ? "inline-flex" : "none";
+      pill.classList.toggle("active", audioOnlyMode);
+      if (stateLabel) stateLabel.innerText = audioOnlyMode ? "ON" : "OFF";
+      if (modeLabel) modeLabel.innerText = audioOnlyMode ? "🎧 Audio-Only" : "🎬 Stream";
+  }
+
+  window.toggleAudioOnlyMode = function() {
+      audioOnlyMode = !audioOnlyMode;
+      localStorage.setItem("hexplay_audio_only", String(audioOnlyMode));
+      syncAudioOnlyUi();
+      logAction(`Audio-Only Mode set to: ${audioOnlyMode ? "ON" : "OFF"}`);
+  };
 
   function isAdultAdConfig(ad) {
       if (!ad) return false;
@@ -1711,6 +1906,7 @@
           }
           renderGallery(document.getElementById("searchInput").value);
       }
+      syncAudioOnlyUi();
       window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
@@ -1736,6 +1932,7 @@
       } else {
           document.getElementById("navHome").classList.add("active");
       }
+      syncAudioOnlyUi();
       renderGallery(document.getElementById("searchInput").value);
   };
 
@@ -2350,10 +2547,7 @@
           list = list.filter(v => Array.isArray(v.parts) && v.parts.length > 0);
           document.getElementById("galleryTitle").innerText = "Shows & Web Series";
       } else if (activeCategory === "music") {
-          list = list.filter(v => {
-              const c = String(v.category || v.genre || v.title || "").toLowerCase();
-              return c.includes("music") || c.includes("song") || c.includes("audio") || c.includes("track");
-          });
+          list = list.filter(v => isMusicItem(v));
           document.getElementById("galleryTitle").innerText = "Music & Tracks";
       } else if (activeCategory === "movie") {
           list = list.filter(v => (!Array.isArray(v.parts) || v.parts.length === 0) && v.isPremium !== "true");
@@ -2387,6 +2581,8 @@
           const safeTitle = esc(v.title || "Untitled");
           const safeImg = esc(v.imageUrl || "");
           const safeUrl = esc(v.videoUrl || "");
+          const safeCat = esc(v.category || "");
+          const safeGenre = esc(v.genre || "");
           const partsJson = v.parts ? encodeURIComponent(JSON.stringify(v.parts)) : "";
 
           let catBadge = "";
@@ -2404,7 +2600,7 @@
           wrapper.className = "card-wrapper";
 
           wrapper.innerHTML = `
-            <a class="card vid-card" data-id="${esc(v.id)}" data-url="${safeUrl}" data-title="${safeTitle}" data-thumb="${safeImg}" data-embed="${isEmbed}" data-premium="${isPremium}" data-parts="${partsJson}">
+            <a class="card vid-card" data-id="${esc(v.id)}" data-url="${safeUrl}" data-title="${safeTitle}" data-thumb="${safeImg}" data-category="${safeCat}" data-genre="${safeGenre}" data-embed="${isEmbed}" data-premium="${isPremium}" data-parts="${partsJson}">
               <div class="card-thumb">
                 <img src="${safeImg}" loading="lazy" decoding="async" onerror="this.style.display='none'">
                 ${catBadge}
@@ -2438,6 +2634,11 @@
               const mainUrl = this.dataset.url;
               const title = this.dataset.title;
               const thumb = this.dataset.thumb || (this.querySelector("img") ? this.querySelector("img").src : "");
+              const itemMeta = {
+                  category: this.dataset.category,
+                  genre: this.dataset.genre,
+                  title
+              };
 
               if (premiumFlag) {
                   window.location.href = `payment.html?vid=${encodeURIComponent(vidId)}&dev=${encodeURIComponent(deviceId || getDeviceId())}&type=video`;
@@ -2449,6 +2650,11 @@
               localHistory.unshift({ id: vidId, title, url: mainUrl, thumb });
               if (localHistory.length > 25) localHistory.pop();
               localStorage.setItem("my_history", JSON.stringify(localHistory));
+
+              if (audioOnlyMode && isMusicItem(itemMeta)) {
+                  miniPlayer.playTrack({ id: vidId, title, url: mainUrl, thumb });
+                  return;
+              }
 
               if (!embedFlag) {
                   logAction(`Opened External Link: ${title}`);
@@ -2924,6 +3130,162 @@
     }
   }
 
+  class MusicMiniPlayer {
+    constructor() {
+        this.audioEl = document.getElementById("musicAudioPlayer");
+        this.container = document.getElementById("musicMiniPlayer");
+        this.thumbEl = document.getElementById("miniThumb");
+        this.titleEl = document.getElementById("miniTrackTitle");
+        this.statusEl = document.getElementById("miniTrackStatus");
+        this.playPauseBtn = document.getElementById("miniPlayPauseBtn");
+        this.currentTrack = null;
+        this.hls = null;
+        this.blobUrl = null;
+        this.bufferMgr = new BufferManager(this.audioEl, null, null);
+
+        if (!this.audioEl) return;
+
+        this.audioEl.addEventListener("waiting", () => {
+            if (this.statusEl) this.statusEl.innerText = "• Buffering...";
+        });
+        this.audioEl.addEventListener("canplay", () => {
+            if (this.statusEl) this.statusEl.innerText = "• Playing";
+        });
+        this.audioEl.addEventListener("playing", () => {
+            this.updatePlayButton(true);
+            if (this.statusEl) this.statusEl.innerText = "• Playing";
+        });
+        this.audioEl.addEventListener("pause", () => {
+            this.updatePlayButton(false);
+            if (this.statusEl) this.statusEl.innerText = "• Paused";
+        });
+        this.audioEl.addEventListener("ended", () => {
+            this.updatePlayButton(false);
+            if (this.statusEl) this.statusEl.innerText = "• Finished";
+        });
+    }
+
+    updatePlayButton(isPlaying) {
+        if (this.playPauseBtn) {
+            this.playPauseBtn.innerText = isPlaying ? "⏸ Pause" : "▶ Play";
+        }
+    }
+
+    cleanupMedia() {
+        if (this.hls) {
+            this.hls.destroy();
+            this.hls = null;
+        }
+        this.bufferMgr.detach();
+        if (this.audioEl) {
+            this.audioEl.pause();
+            this.audioEl.removeAttribute("src");
+            this.audioEl.load();
+        }
+        if (this.blobUrl) {
+            URL.revokeObjectURL(this.blobUrl);
+            this.blobUrl = null;
+        }
+    }
+
+    async resolveAudioSource(track) {
+        const offlineItems = JSON.parse(localStorage.getItem("my_downloads") || "[]");
+        const saved = offlineItems.find(m => m.id === track.id);
+        if (saved && saved.url) {
+            try {
+                const cache = await caches.open(CACHE_NAME);
+                const cachedResp = await cache.match(saved.url);
+                if (cachedResp) {
+                    const blob = await cachedResp.blob();
+                    this.blobUrl = URL.createObjectURL(blob);
+                    return this.blobUrl;
+                }
+            } catch (e) {}
+        }
+
+        const rawUrl = track.url || "";
+        if (rawUrl.match(/\.(mp3|m4a|aac|ogg|wav|mp4|m3u8)(\?|$)/i)) {
+            return rawUrl;
+        }
+
+        try {
+            const res = await fetch(WORKER_URL + encodeURIComponent(rawUrl));
+            const data = await res.json();
+            if (data.success && data.direct_url) return data.direct_url;
+        } catch (e) {}
+
+        return rawUrl;
+    }
+
+    async playTrack(track) {
+        if (typeof player !== "undefined" && player.modal && player.modal.style.display === "flex") {
+            player.close();
+        }
+        this.cleanupMedia();
+        this.currentTrack = track;
+        this.container.style.display = "flex";
+        document.body.classList.add("has-mini-player");
+        this.titleEl.innerText = track.title || "Untitled Track";
+        if (this.thumbEl) {
+            if (track.thumb && isSafeHttpUrl(track.thumb)) {
+                this.thumbEl.src = track.thumb;
+                this.thumbEl.style.display = "block";
+            } else {
+                this.thumbEl.style.display = "none";
+            }
+        }
+        if (this.statusEl) this.statusEl.innerText = "• Loading audio...";
+        syncAudioOnlyUi();
+        logAction(`Playing Music Track (Audio-Only): ${track.title}`);
+        logWatchHistory(track.id, track.title, 0);
+
+        const resolvedUrl = await this.resolveAudioSource(track);
+        this.bufferMgr.attach();
+
+        const isHls = /\.m3u8(\?|$)/i.test(resolvedUrl);
+        if (isHls && window.Hls && window.Hls.isSupported()) {
+            const hls = new window.Hls({ maxBufferLength: 30, enableWorker: true });
+            hls.loadSource(resolvedUrl);
+            hls.attachMedia(this.audioEl);
+            hls.on(window.Hls.Events.MANIFEST_PARSED, () => {
+                this.audioEl.play().catch(() => {});
+            });
+            this.hls = hls;
+        } else {
+            this.audioEl.src = resolvedUrl;
+            this.audioEl.play().catch(() => {
+                if (this.statusEl) this.statusEl.innerText = "• Tap Play";
+            });
+        }
+    }
+
+    togglePlayPause() {
+        if (!this.audioEl || !this.currentTrack) return;
+        if (this.audioEl.paused) {
+            this.audioEl.play().catch(() => {});
+        } else {
+            this.audioEl.pause();
+        }
+    }
+
+    close() {
+        this.cleanupMedia();
+        this.currentTrack = null;
+        if (this.container) this.container.style.display = "none";
+        document.body.classList.remove("has-mini-player");
+    }
+  }
+
+  const miniPlayer = new MusicMiniPlayer();
+
+  window.toggleMiniPlayPause = function() {
+      miniPlayer.togglePlayPause();
+  };
+
+  window.closeMusicMiniPlayer = function() {
+      miniPlayer.close();
+  };
+
   class SecureVideoPlayer {
     constructor() {
         this.init();
@@ -2937,6 +3299,7 @@
 
     init() {
       this.modal = document.getElementById("playerModal");
+      this.wrapper = document.getElementById("playerWrapper");
       this.iframeContainer = document.getElementById("iframeContainer");
       this.iframePlayer = document.getElementById("iframePlayer");
       this.nativePlayer = document.getElementById("nativePlayer");
@@ -2988,19 +3351,44 @@
         if (this.rotateDegLabel) {
             this.rotateDegLabel.innerText = `${this.rotation}°`;
         }
-        const isSideways = this.rotation === 90 || this.rotation === 270;
-        const fitScale = isSideways
-            ? Math.min(window.innerWidth / Math.max(window.innerHeight, 1), window.innerHeight / Math.max(window.innerWidth, 1))
-            : 1;
 
-        if (this.nativePlayer && this.nativePlayer.style.display !== "none") {
-            this.nativePlayer.style.transformOrigin = "center center";
-            this.nativePlayer.style.transform = `rotate(${this.rotation}deg) scale(${fitScale.toFixed(3)})`;
+        const isSideways = this.rotation === 90 || this.rotation === 270;
+        const vw = Math.max(window.innerWidth || document.documentElement.clientWidth, 1);
+        const vh = Math.max(window.innerHeight || document.documentElement.clientHeight, 1);
+
+        if (this.uiRotateBtn) {
+            this.uiRotateBtn.classList.toggle("active", isSideways);
         }
 
-        if (this.iframePlayer && this.iframePlayer.style.display !== "none") {
-            const baseScale = isSideways ? 0.3833 * fitScale : 0.3833;
-            this.iframePlayer.style.transform = `translate(-50%, -50%) rotate(${this.rotation}deg) scale(${baseScale.toFixed(4)})`;
+        if (this.wrapper) {
+            this.wrapper.classList.toggle("rotated-full", isSideways);
+            if (isSideways) {
+                this.wrapper.style.setProperty("--rot-w", `${vh}px`);
+                this.wrapper.style.setProperty("--rot-h", `${vw}px`);
+            } else {
+                this.wrapper.style.removeProperty("--rot-w");
+                this.wrapper.style.removeProperty("--rot-h");
+            }
+        }
+
+        if (isSideways) {
+            if (this.nativePlayer && this.nativePlayer.style.display !== "none") {
+                this.nativePlayer.style.transformOrigin = "center center";
+                this.nativePlayer.style.transform = `translate(-50%, -50%) rotate(${this.rotation}deg)`;
+            }
+            if (this.iframePlayer && this.iframePlayer.style.display !== "none") {
+                this.iframePlayer.style.transformOrigin = "center center";
+                this.iframePlayer.style.transform = `translate(-50%, -50%) rotate(${this.rotation}deg)`;
+            }
+        } else {
+            if (this.nativePlayer) {
+                this.nativePlayer.style.transformOrigin = "center center";
+                this.nativePlayer.style.transform = `rotate(${this.rotation}deg)`;
+            }
+            if (this.iframePlayer) {
+                this.iframePlayer.style.transformOrigin = "center center";
+                this.iframePlayer.style.transform = `translate(-50%, -50%) rotate(${this.rotation}deg)`;
+            }
         }
     }
 
@@ -3009,6 +3397,10 @@
     }
 
     async open(url, title, vidId) {
+      if (typeof miniPlayer !== "undefined" && miniPlayer.audioEl && !miniPlayer.audioEl.paused) {
+          miniPlayer.audioEl.pause();
+      }
+
       this.currentVidId = vidId;
       this.currentTitle = title;
       this.sessionStartTime = Date.now();
@@ -3172,7 +3564,7 @@
             this.nativePlayer.load();
             this.nativePlayer.style.transform = "";
         }
-        this.iframePlayer.style.transform = "translate(-50%, -50%) scale(0.3833)";
+        this.iframePlayer.style.transform = "translate(-50%, -50%)";
 
         if (this.activeBlobUrl) {
             URL.revokeObjectURL(this.activeBlobUrl);
@@ -3198,6 +3590,7 @@
   }
 
   const player = new SecureVideoPlayer();
+  syncAudioOnlyUi();
 
   const initialQuery = urlParams.get("q");
   if (initialQuery) {
