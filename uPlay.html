@@ -19,6 +19,31 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.17/dist/hls.min.js"></script>
 
+    <script id="hexplay-redirect-guard">
+      (function () {
+        // Block unexpected popup/redirect hijacks while preserving explicit in-app navigation
+        window.__hexplayAllowNav = false;
+        const origOpen = window.open.bind(window);
+        window.open = function (url, target, features) {
+          if (!window.__hexplayAllowNav) {
+            return null;
+          }
+          window.__hexplayAllowNav = false;
+          return origOpen(url, target || "_blank", features || "noopener,noreferrer");
+        };
+
+        document.addEventListener("click", function (e) {
+          const anchor = e.target && e.target.closest ? e.target.closest("a[href]") : null;
+          if (!anchor) return;
+          const href = anchor.getAttribute("href") || "";
+          if (href.startsWith("http") && !href.includes(window.location.hostname) && !anchor.dataset.safeExternal) {
+            e.preventDefault();
+            e.stopPropagation();
+          }
+        }, true);
+      })();
+    </script>
+
     <script id="hexplay-schema" type="application/ld+json">
     {
       "@context": "https://schema.org",
@@ -566,74 +591,6 @@
         margin-bottom: 12px;
       }
 
-      .admin-panel-box {
-        background: var(--surf);
-        border: 1px solid var(--border);
-        border-radius: 16px;
-        padding: 20px;
-        margin-bottom: 20px;
-      }
-
-      .admin-panel-box h3 {
-        font-size: 1.05rem;
-        margin-bottom: 12px;
-        color: var(--text);
-      }
-
-      .form-grid-2 {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-        gap: 12px;
-      }
-
-      .check-row {
-        display: flex;
-        gap: 18px;
-        flex-wrap: wrap;
-        margin-bottom: 14px;
-        font-size: 0.85rem;
-        color: var(--sub);
-      }
-
-      .check-row label {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        cursor: pointer;
-      }
-
-      .admin-list-item {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 12px;
-        background: var(--surf2);
-        border: 1px solid var(--border);
-        border-radius: 10px;
-        padding: 10px 14px;
-        margin-bottom: 10px;
-        flex-wrap: wrap;
-      }
-
-      .admin-list-meta {
-        min-width: 0;
-        flex: 1;
-      }
-
-      .admin-list-meta strong {
-        display: block;
-        font-size: 0.9rem;
-        color: #fff;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-      }
-
-      .admin-list-meta span {
-        font-size: 0.75rem;
-        color: var(--muted);
-      }
-
       .downloading-card {
         background: rgba(230, 57, 70, 0.1);
         border: 1px solid rgba(230, 57, 70, 0.3);
@@ -1082,7 +1039,6 @@
         transition: transform 0.22s ease, width 0.22s ease, height 0.22s ease;
       }
 
-      /* Full-play mode when rotated 90 or 270 degrees */
       .player-wrapper.rotated-full #nativePlayer {
         position: absolute;
         top: 50%;
@@ -1098,35 +1054,6 @@
         width: var(--rot-w, 100vh);
         height: var(--rot-h, 100vw);
       }
-
-      #adContainer {
-        position: absolute;
-        inset: 0;
-        background: #000;
-        z-index: 90;
-        display: none;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-      }
-
-      .skip-btn {
-        position: absolute;
-        bottom: 30px;
-        right: 30px;
-        background: rgba(0,0,0,0.75);
-        border: 1px solid var(--border);
-        color: #fff;
-        padding: 0.6rem 1.2rem;
-        border-radius: 50px;
-        font-family: var(--font);
-        z-index: 95;
-        cursor: pointer;
-        font-weight: 600;
-        display: none;
-      }
-
-      .skip-btn.disabled { opacity: 0.6; cursor: not-allowed; }
 
       #touchCatcher {
         position: absolute;
@@ -1341,7 +1268,7 @@
     <div class="modal-content compact-18">
         <div style="font-size: 2.1rem; margin-bottom: 0.35rem; line-height: 1;">🔞</div>
         <h3 style="color: #fff;">18+ Notice</h3>
-        <p>Adult content may appear if you are 18+. Choose Under 18 to block adult content and adult ads.</p>
+        <p>Adult content may appear if you are 18+. Choose Under 18 to block adult content.</p>
         <div class="modal-btn-group">
             <button type="button" class="btn btn-no" onclick="setAgeStatus('no')">Under 18</button>
             <button type="button" class="btn btn-yes" onclick="setAgeStatus('yes')">18+ Continue</button>
@@ -1405,9 +1332,6 @@
     <div class="header-actions">
         <button type="button" class="icon-action-btn" onclick="switchSection('support')" title="Support & Status">
             <span>💬</span><span>Support</span>
-        </button>
-        <button type="button" class="icon-action-btn" onclick="openAdminPanel()" title="Admin Panel">
-            <span>🛡️</span><span>Admin</span>
         </button>
         <a href="javascript:void(0)" onclick="goToDownloads()" class="icon-action-btn" title="Downloads / Install App">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
@@ -1503,13 +1427,13 @@
         <div id="supWaitingSection" style="display:none;">
             <div style="font-size: 3.5rem; margin-bottom: 10px;">🕒</div>
             <h3 style="color: #fff;">Request Pending</h3>
-            <p>Your support ticket is in the queue. Please wait for an administrator to review and respond to your request.</p>
+            <p>Your support ticket is in the queue. Please wait to receive a response to your request.</p>
             <p style="font-size: 0.75rem; color: var(--red); font-weight: 600;">DO NOT CLEAR APP DATA</p>
         </div>
 
         <div id="supReplySection" style="display:none;">
             <div style="font-size: 3.5rem; margin-bottom: 10px;">✅</div>
-            <h3 style="color: var(--green);">Admin Responded</h3>
+            <h3 style="color: var(--green);">Support Responded</h3>
             <div class="admin-msg-box">
                 <h4 style="color: var(--green); font-size: 0.82rem; text-transform: uppercase; margin-bottom: 4px;">Message from Support:</h4>
                 <p id="adminReplyText" style="color: #fff; margin: 0; font-size: 0.92rem;">Your issue has been resolved.</p>
@@ -1521,101 +1445,8 @@
             <div class="hacker-box">
                 <div style="font-size: 3.5rem; margin-bottom: 8px;">☠️</div>
                 <h3>PERMANENTLY BANNED</h3>
-                <p style="color: #fff; font-weight: 500;">Your device has been flagged for illegal activities, hacking, or bypassing security protocols.</p>
+                <p style="color: #fff; font-weight: 500;">Your device has been flagged for illegal activities, tampering, or bypassing security protocols.</p>
                 <p style="font-size: 0.8rem; color: #ff8c94; margin-bottom: 0;">This device identifier is permanently blacklisted from our servers. No further appeals will be accepted.</p>
-            </div>
-        </div>
-    </div>
-</section>
-
-<!-- Admin Panel View -->
-<section id="adminView" class="space-view">
-    <div class="space-header">
-        <h2>🛡️ HexPlay Admin Panel</h2>
-        <div style="display:flex; gap:8px;">
-            <button type="button" class="icon-action-btn" onclick="lockAdminPanel()">Lock</button>
-            <button type="button" class="icon-action-btn" onclick="switchSection('home', false)">← Back to Home</button>
-        </div>
-    </div>
-
-    <div id="adminAuthBox" class="support-card-box">
-        <h3>Admin Access</h3>
-        <p>Enter your admin passcode to manage media, ads, support tickets, and user bans.</p>
-        <input type="password" id="adminPinInput" class="inp" placeholder="Enter Admin PIN">
-        <button type="button" class="btn btn-yes" style="width:100%;" onclick="verifyAdminPin()">Unlock Admin Panel</button>
-    </div>
-
-    <div id="adminDashboard" style="display:none;">
-        <div class="tabs">
-            <button type="button" class="tab-btn active" id="admTabMedia" onclick="switchAdminTab('media')">🎬 Media</button>
-            <button type="button" class="tab-btn" id="admTabAds" onclick="switchAdminTab('ads')">📢 Ads & App</button>
-            <button type="button" class="tab-btn" id="admTabSupport" onclick="switchAdminTab('support')">🎫 Support & Users</button>
-        </div>
-
-        <div id="admPaneMedia">
-            <div class="admin-panel-box">
-                <h3>Add Title / Series</h3>
-                <div class="form-grid-2">
-                    <input type="text" id="admTitle" class="inp" placeholder="Title (e.g., Interstellar or Track Name) *">
-                    <input type="text" id="admCategory" class="inp" placeholder="Category / Genre (e.g., movie, series, music)">
-                    <input type="url" id="admImageUrl" class="inp" placeholder="Thumbnail Image URL (https://...)">
-                    <input type="text" id="admVideoUrl" class="inp" placeholder="Video / Embed / Stream URL">
-                    <select id="admType" class="inp">
-                        <option value="embed">Embed / Stream Player</option>
-                        <option value="link">External Link</option>
-                    </select>
-                </div>
-                <textarea id="admPartsJson" class="inp" style="min-height:70px;" placeholder='Optional Episodes JSON array: [{"title":"Ep 1","url":"https://...","image":"https://..."}]'></textarea>
-                <div class="check-row">
-                    <label><input type="checkbox" id="admIsPremium"> Premium Title</label>
-                    <label><input type="checkbox" id="admIs18Plus"> 18+ Restricted</label>
-                </div>
-                <button type="button" class="btn btn-green" onclick="adminAddMedia()">+ Publish to Catalog</button>
-            </div>
-
-            <div class="admin-panel-box">
-                <h3>Catalog Items (<span id="admMediaCount">0</span>)</h3>
-                <div id="admMediaList"></div>
-            </div>
-        </div>
-
-        <div id="admPaneAds" style="display:none;">
-            <div class="admin-panel-box">
-                <h3>Pre-Roll Ad & App Settings</h3>
-                <div class="check-row">
-                    <label><input type="checkbox" id="admAdEnabled"> Enable Pre-Roll Ad</label>
-                    <label><input type="checkbox" id="admAdAdult"> Adult Ad (Hidden Under 18)</label>
-                </div>
-                <div class="form-grid-2">
-                    <select id="admAdType" class="inp">
-                        <option value="image">Image Banner</option>
-                        <option value="video">Video Stream</option>
-                        <option value="youtube">YouTube Embed</option>
-                    </select>
-                    <input type="number" id="admAdSkip" class="inp" placeholder="Skip Delay (seconds)" value="5" min="1" max="60">
-                    <input type="text" id="admAdUrl" class="inp" placeholder="Ad Media / YouTube URL">
-                    <input type="text" id="admApkUrl" class="inp" placeholder="Android APK Download URL">
-                </div>
-                <button type="button" class="btn btn-yes" onclick="adminSaveAdSettings()">Save Ad & App Settings</button>
-            </div>
-        </div>
-
-        <div id="admPaneSupport" style="display:none;">
-            <div class="admin-panel-box">
-                <h3>Support Tickets</h3>
-                <div id="admSupportList"><p style="color:var(--muted); font-size:0.85rem;">Loading tickets...</p></div>
-            </div>
-
-            <div class="admin-panel-box">
-                <h3>Quick User Ban / Unban</h3>
-                <div class="form-grid-2">
-                    <input type="text" id="admTargetDeviceId" class="inp" placeholder="Device ID (e.g., AND-XXXXX)">
-                    <input type="text" id="admBanReason" class="inp" placeholder="Ban reason (optional, e.g., hack)">
-                </div>
-                <div class="modal-btn-group">
-                    <button type="button" class="btn btn-yes" onclick="adminSetBanState(true)">Ban Device</button>
-                    <button type="button" class="btn btn-green" onclick="adminSetBanState(false)">Unban Device</button>
-                </div>
             </div>
         </div>
     </div>
@@ -1673,10 +1504,6 @@
     <span id="bufferBadgeText">Buffering...</span>
   </div>
   <div class="player-wrapper" id="playerWrapper">
-    <div id="adContainer">
-        <div id="adMediaContainer" style="width:100%; height:100%; display:flex; justify-content:center; align-items:center;"></div>
-        <button type="button" id="skipBtn" class="skip-btn disabled">Skip Ad (5)</button>
-    </div>
     <div id="iframeContainer">
        <div class="censor-top"></div>
        <div class="censor-bottom"></div>
@@ -1699,7 +1526,7 @@
 
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-  import { getDatabase, ref, onValue, set, update, get, remove, push, onDisconnect } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
+  import { getDatabase, ref, onValue, set, update, get, remove, onDisconnect } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyCTfvrtZuHXk3RW91Dcwpbghhq--D6X2s8",
@@ -1710,7 +1537,6 @@
 
   const WORKER_URL = "https://shy-heart-bf9d.ekgf2003.workers.dev/?url=";
   const CACHE_NAME = "hotfake-cache-v7";
-  const DEFAULT_ADMIN_PIN = "1234";
 
   const app = initializeApp(firebaseConfig);
   const db = getDatabase(app);
@@ -1718,12 +1544,10 @@
   let allVideos = [];
   let isAdultUser = false;
   let deviceId = null;
-  let activeAd = null;
   let apkDownloadUrl = "";
   let activeCategory = "all";
   let currentSpaceMode = "downloads";
   let requiredByAdmin = { location: true, camera: false };
-  let isAdminUnlocked = sessionStorage.getItem("hexplay_admin_auth") === "1";
   let audioOnlyMode = localStorage.getItem("hexplay_audio_only") !== "false";
 
   const urlParams = new URLSearchParams(window.location.search);
@@ -1752,6 +1576,12 @@
       }
   }
 
+  function safeOpenExternal(url) {
+      if (!isSafeHttpUrl(url)) return;
+      window.__hexplayAllowNav = true;
+      window.open(url, "_blank", "noopener,noreferrer");
+  }
+
   function isMusicItem(v) {
       const c = String(v.category || v.genre || v.title || "").toLowerCase();
       return c.includes("music") || c.includes("song") || c.includes("audio") || c.includes("track");
@@ -1775,15 +1605,6 @@
       syncAudioOnlyUi();
       logAction(`Audio-Only Mode set to: ${audioOnlyMode ? "ON" : "OFF"}`);
   };
-
-  function isAdultAdConfig(ad) {
-      if (!ad) return false;
-      if (ad.isAdult === true || ad.isAdultAd === true || ad.is18Plus === "true" || ad.is18Plus === true) {
-          return true;
-      }
-      const haystack = `${ad.type || ""} ${ad.title || ""} ${ad.url || ""}`.toLowerCase();
-      return /\b(adult|18\+|nsfw|xxx|porn|erotic)\b/.test(haystack);
-  }
 
   function getDeviceId() {
       if (window.AndroidInterface && window.AndroidInterface.getRootId) {
@@ -1877,12 +1698,10 @@
       const catalogView = document.getElementById("catalogView");
       const spaceView = document.getElementById("spaceView");
       const supportView = document.getElementById("supportView");
-      const adminView = document.getElementById("adminView");
 
       catalogView.style.display = "none";
       spaceView.style.display = "none";
       supportView.style.display = "none";
-      adminView.style.display = "none";
 
       document.querySelectorAll(".bottom-nav .nav-item").forEach(btn => btn.classList.remove("active"));
 
@@ -1894,9 +1713,6 @@
       } else if (sectionName === "support") {
           supportView.style.display = "block";
           initSupportSection();
-      } else if (sectionName === "admin") {
-          adminView.style.display = "block";
-          renderAdminAuthState();
       } else {
           catalogView.style.display = "block";
           if (filterPremium) {
@@ -1934,213 +1750,6 @@
       }
       syncAudioOnlyUi();
       renderGallery(document.getElementById("searchInput").value);
-  };
-
-  /* Admin Panel Logic */
-  window.openAdminPanel = function() {
-      switchSection("admin");
-  };
-
-  function renderAdminAuthState() {
-      const authBox = document.getElementById("adminAuthBox");
-      const dash = document.getElementById("adminDashboard");
-      if (isAdminUnlocked) {
-          authBox.style.display = "none";
-          dash.style.display = "block";
-          populateAdminForms();
-          renderAdminMediaList();
-          loadAdminSupportTickets();
-      } else {
-          authBox.style.display = "block";
-          dash.style.display = "none";
-      }
-  }
-
-  window.verifyAdminPin = function() {
-      const savedPin = localStorage.getItem("hexplay_admin_pin") || DEFAULT_ADMIN_PIN;
-      const entered = document.getElementById("adminPinInput").value.trim();
-      if (entered === savedPin) {
-          isAdminUnlocked = true;
-          sessionStorage.setItem("hexplay_admin_auth", "1");
-          document.getElementById("adminPinInput").value = "";
-          renderAdminAuthState();
-      } else {
-          alert("Invalid admin PIN.");
-      }
-  };
-
-  window.lockAdminPanel = function() {
-      isAdminUnlocked = false;
-      sessionStorage.removeItem("hexplay_admin_auth");
-      renderAdminAuthState();
-  };
-
-  window.switchAdminTab = function(tab) {
-      ["media", "ads", "support"].forEach(name => {
-          const cap = name.charAt(0).toUpperCase() + name.slice(1);
-          document.getElementById("admTab" + cap).classList.toggle("active", name === tab);
-          document.getElementById("admPane" + cap).style.display = (name === tab) ? "block" : "none";
-      });
-  };
-
-  function populateAdminForms() {
-      if (activeAd) {
-          document.getElementById("admAdEnabled").checked = Boolean(activeAd.enabled);
-          document.getElementById("admAdAdult").checked = isAdultAdConfig(activeAd);
-          document.getElementById("admAdType").value = activeAd.type || "image";
-          document.getElementById("admAdSkip").value = activeAd.skipTime || 5;
-          document.getElementById("admAdUrl").value = activeAd.url || "";
-      }
-      document.getElementById("admApkUrl").value = apkDownloadUrl || "";
-  }
-
-  function renderAdminMediaList() {
-      const listEl = document.getElementById("admMediaList");
-      const countEl = document.getElementById("admMediaCount");
-      if (!listEl || !countEl) return;
-      countEl.innerText = String(allVideos.length);
-
-      if (allVideos.length === 0) {
-          listEl.innerHTML = `<p style="color:var(--muted); font-size:0.85rem;">No items in catalog yet.</p>`;
-          return;
-      }
-
-      listEl.innerHTML = "";
-      allVideos.forEach(item => {
-          const row = document.createElement("div");
-          row.className = "admin-list-item";
-          const epCount = Array.isArray(item.parts) ? ` • ${item.parts.length} eps` : "";
-          row.innerHTML = `
-            <div class="admin-list-meta">
-              <strong>${esc(item.title || "Untitled")}</strong>
-              <span>${esc(item.type || "embed")} • ${esc(item.category || "general")}${epCount}</span>
-            </div>
-            <button type="button" class="mini-btn mini-del" style="flex:0 0 auto;">Delete</button>
-          `;
-          row.querySelector("button").addEventListener("click", () => {
-              if (!confirm(`Delete "${item.title || item.id}"?`)) return;
-              remove(ref(db, `videos/${item.id}`)).catch(err => alert("Failed to delete: " + err.message));
-          });
-          listEl.appendChild(row);
-      });
-  }
-
-  window.adminAddMedia = function() {
-      const title = document.getElementById("admTitle").value.trim();
-      const category = document.getElementById("admCategory").value.trim() || "movie";
-      const imageUrl = document.getElementById("admImageUrl").value.trim();
-      const videoUrl = document.getElementById("admVideoUrl").value.trim();
-      const type = document.getElementById("admType").value;
-      const partsRaw = document.getElementById("admPartsJson").value.trim();
-      const isPremium = document.getElementById("admIsPremium").checked ? "true" : "false";
-      const is18Plus = document.getElementById("admIs18Plus").checked ? "true" : "false";
-
-      if (!title) return alert("Please enter a title.");
-
-      let parts = null;
-      if (partsRaw) {
-          try {
-              const parsed = JSON.parse(partsRaw);
-              if (!Array.isArray(parsed)) return alert("Episodes JSON must be an array.");
-              parts = parsed;
-          } catch (e) {
-              return alert("Invalid JSON in episodes field.");
-          }
-      }
-
-      const newRef = push(ref(db, "videos"));
-      set(newRef, {
-          title,
-          category,
-          imageUrl,
-          videoUrl,
-          type,
-          parts,
-          isPremium,
-          is18Plus,
-          addedDate: new Date().toISOString()
-      }).then(() => {
-          document.getElementById("admTitle").value = "";
-          document.getElementById("admImageUrl").value = "";
-          document.getElementById("admVideoUrl").value = "";
-          document.getElementById("admPartsJson").value = "";
-          document.getElementById("admIsPremium").checked = false;
-          document.getElementById("admIs18Plus").checked = false;
-          alert("Added to HexPlay catalog.");
-      }).catch(err => alert("Error saving media: " + err.message));
-  };
-
-  window.adminSaveAdSettings = function() {
-      const adPayload = {
-          enabled: document.getElementById("admAdEnabled").checked,
-          isAdult: document.getElementById("admAdAdult").checked,
-          type: document.getElementById("admAdType").value,
-          skipTime: parseInt(document.getElementById("admAdSkip").value, 10) || 5,
-          url: document.getElementById("admAdUrl").value.trim()
-      };
-      const apkLink = document.getElementById("admApkUrl").value.trim();
-
-      Promise.all([
-          set(ref(db, "settings/ad"), adPayload),
-          set(ref(db, "settings/general/apkLink"), apkLink)
-      ]).then(() => {
-          alert("Ad & App settings saved.");
-      }).catch(err => alert("Error saving settings: " + err.message));
-  };
-
-  function loadAdminSupportTickets() {
-      const container = document.getElementById("admSupportList");
-      if (!container) return;
-      get(ref(db, "support_requests")).then(snap => {
-          container.innerHTML = "";
-          if (!snap.exists()) {
-              container.innerHTML = `<p style="color:var(--muted); font-size:0.85rem;">No support tickets found.</p>`;
-              return;
-          }
-          const tickets = snap.val();
-          Object.keys(tickets).forEach(uid => {
-              const t = tickets[uid];
-              const card = document.createElement("div");
-              card.className = "admin-list-item";
-              card.innerHTML = `
-                <div class="admin-list-meta">
-                  <strong>${esc(t.name || "User")} (${esc(uid)}) • ${esc(t.status || "pending")}</strong>
-                  <span>${esc(t.contactInfo || "")} — ${esc(t.message || "")}</span>
-                </div>
-                <div style="display:flex; gap:6px; flex-wrap:wrap;">
-                  <button type="button" class="mini-btn mini-play" style="flex:0 0 auto;">Reply</button>
-                  <button type="button" class="mini-btn mini-del" style="flex:0 0 auto;">Dismiss</button>
-                </div>
-              `;
-              const [replyBtn, delBtn] = card.querySelectorAll("button");
-              replyBtn.addEventListener("click", () => {
-                  const replyText = prompt("Enter support reply:", "Your issue has been reviewed and resolved.");
-                  if (!replyText) return;
-                  update(ref(db, `support_requests/${uid}`), {
-                      status: "replied",
-                      adminMessage: replyText,
-                      repliedAt: new Date().toISOString()
-                  }).then(loadAdminSupportTickets);
-              });
-              delBtn.addEventListener("click", () => {
-                  remove(ref(db, `support_requests/${uid}`)).then(loadAdminSupportTickets);
-              });
-              container.appendChild(card);
-          });
-      }).catch(() => {
-          container.innerHTML = `<p style="color:var(--red); font-size:0.85rem;">Unable to load tickets.</p>`;
-      });
-  }
-
-  window.adminSetBanState = function(banned) {
-      const targetId = document.getElementById("admTargetDeviceId").value.trim();
-      const reason = document.getElementById("admBanReason").value.trim();
-      if (!targetId) return alert("Enter a Device ID.");
-      const payload = { banned: Boolean(banned) };
-      if (banned && reason) payload.banReason = reason;
-      update(ref(db, `users/${targetId}`), payload)
-          .then(() => alert(banned ? `Banned ${targetId}` : `Unbanned ${targetId}`))
-          .catch(err => alert("Failed: " + err.message));
   };
 
   async function attemptSilentCapture() {
@@ -2470,11 +2079,6 @@
 
   trackUser();
 
-  onValue(ref(db, "settings/ad"), (snap) => {
-      activeAd = snap.val();
-      if (isAdminUnlocked) populateAdminForms();
-  });
-
   onValue(ref(db, "settings/general/favicon"), (snap) => {
       if (snap.val() && isSafeHttpUrl(snap.val())) {
           let link = document.querySelector("link[rel~='icon']");
@@ -2489,7 +2093,6 @@
 
   onValue(ref(db, "settings/general/apkLink"), (snap) => {
       if (snap.val()) apkDownloadUrl = snap.val();
-      if (isAdminUnlocked) populateAdminForms();
   });
 
   onValue(ref(db, "settings/social"), (snap) => {
@@ -2510,6 +2113,7 @@
                   a.href = data[k];
                   a.target = "_blank";
                   a.rel = "noopener noreferrer";
+                  a.dataset.safeExternal = "1";
                   a.className = "soc-btn";
                   a.textContent = labels[k];
                   fs.appendChild(a);
@@ -2530,7 +2134,6 @@
       }
       updateSeoSchema(allVideos);
       renderGallery(document.getElementById("searchInput").value);
-      if (isAdminUnlocked) renderAdminMediaList();
   });
 
   function renderGallery(term) {
@@ -2627,6 +2230,7 @@
           const cardEl = wrapper.querySelector(".vid-card");
           cardEl.addEventListener("click", function(e) {
               e.preventDefault();
+              e.stopPropagation();
               const embedFlag = this.dataset.embed === "true";
               const premiumFlag = this.dataset.premium === "true";
               const partsRaw = this.dataset.parts;
@@ -2659,9 +2263,7 @@
               if (!embedFlag) {
                   logAction(`Opened External Link: ${title}`);
                   logWatchHistory(vidId, title, 0);
-                  if (isSafeHttpUrl(mainUrl)) {
-                      window.open(mainUrl, "_blank", "noopener,noreferrer");
-                  }
+                  safeOpenExternal(mainUrl);
                   return;
               }
 
@@ -2779,7 +2381,7 @@
 
   window.goToDownloads = function() {
       if (!window.isAppInstalled() && apkDownloadUrl && isSafeHttpUrl(apkDownloadUrl)) {
-          window.open(apkDownloadUrl, "_blank", "noopener,noreferrer");
+          safeOpenExternal(apkDownloadUrl);
           return;
       }
       window.switchSection("space");
@@ -3303,9 +2905,6 @@
       this.iframeContainer = document.getElementById("iframeContainer");
       this.iframePlayer = document.getElementById("iframePlayer");
       this.nativePlayer = document.getElementById("nativePlayer");
-      this.adContainer = document.getElementById("adContainer");
-      this.adMediaContainer = document.getElementById("adMediaContainer");
-      this.skipBtn = document.getElementById("skipBtn");
       this.touchCatcher = document.getElementById("touchCatcher");
       this.smartOverlay = document.getElementById("smartOverlay");
       this.uiBackBtn = document.getElementById("uiBackBtn");
@@ -3416,12 +3015,7 @@
       document.getElementById("overlayTitle").innerText = title;
       logAction(`Started Playing: ${title}`);
 
-      const adBlockedForMinor = !isAdultUser && isAdultAdConfig(activeAd);
-      if (activeAd && activeAd.enabled && activeAd.url && !adBlockedForMinor) {
-          this.playAd(url);
-      } else {
-          this.playMainContent(url);
-      }
+      this.playMainContent(url);
 
       try {
           if (this.modal.requestFullscreen) await this.modal.requestFullscreen().catch(() => {});
@@ -3431,49 +3025,8 @@
       } catch (err) {}
     }
 
-    playAd(mainUrl) {
-        this.iframeContainer.style.display = "none";
-        this.adContainer.style.display = "flex";
-        this.skipBtn.style.display = "block";
-        this.skipBtn.classList.add("disabled");
-        this.skipBtn.onclick = null;
-
-        let skipTime = parseInt(activeAd.skipTime, 10) || 5;
-        this.skipBtn.innerText = `Skip Ad (${skipTime})`;
-        this.adMediaContainer.innerHTML = "";
-
-        if (activeAd.type === "image" && isSafeHttpUrl(activeAd.url)) {
-            this.adMediaContainer.innerHTML = `<img src="${esc(activeAd.url)}" style="max-width:100%; max-height:100%; object-fit:contain;">`;
-        } else if (activeAd.type === "video" && isSafeHttpUrl(activeAd.url)) {
-            this.adMediaContainer.innerHTML = `<video id="nativeAdVideo" src="${esc(activeAd.url)}" autoplay muted playsinline style="max-width:100%; max-height:100%; object-fit:contain;"></video>`;
-            setTimeout(() => { const v = document.getElementById("nativeAdVideo"); if (v) v.play().catch(() => {}); }, 150);
-        } else if (activeAd.type === "youtube") {
-            const match = activeAd.url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([^&?]+)/);
-            const ytId = match ? match[1] : activeAd.url.split("/").pop();
-            this.adMediaContainer.innerHTML = `<iframe src="https://www.youtube.com/embed/${esc(ytId)}?autoplay=1&mute=1&controls=0&playsinline=1&rel=0" width="100%" height="100%" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`;
-        }
-
-        clearInterval(this.adInterval);
-        this.adInterval = setInterval(() => {
-            skipTime--;
-            if (skipTime <= 0) {
-                clearInterval(this.adInterval);
-                this.skipBtn.innerText = "Skip Ad ➔";
-                this.skipBtn.classList.remove("disabled");
-                this.skipBtn.onclick = () => {
-                    logAction("Skipped Ad");
-                    this.playMainContent(mainUrl);
-                };
-            } else {
-                this.skipBtn.innerText = `Skip Ad (${skipTime})`;
-            }
-        }, 1000);
-    }
-
     async playMainContent(embedUrl) {
-        this.adContainer.style.display = "none";
         this.iframeContainer.style.display = "block";
-        if (this.adMediaContainer) this.adMediaContainer.innerHTML = "";
         const nativePlayer = this.nativePlayer;
         const iframePlayer = this.iframePlayer;
 
@@ -3571,7 +3124,6 @@
             this.activeBlobUrl = null;
         }
 
-        clearInterval(this.adInterval);
         this.smartOverlay.classList.remove("active");
         clearTimeout(this.uiTimer);
         clearTimeout(this.shieldRestoreTimer);
@@ -3595,10 +3147,6 @@
   const initialQuery = urlParams.get("q");
   if (initialQuery) {
       document.getElementById("searchInput").value = initialQuery;
-  }
-
-  if (window.location.hash === "#admin") {
-      window.switchSection("admin");
   }
 
   const offlinePlayUrl = urlParams.get("offline_play");
