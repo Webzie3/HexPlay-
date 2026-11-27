@@ -1482,6 +1482,31 @@
       });
   }
 
+  function isSportsItem(v) {
+      if (!v) return false;
+      if (v.isLiveSports === true || v.isLiveSports === "true" || v.isSports === true || v.isSports === "true") {
+          return true;
+      }
+      const c = String(v.category || v.genre || v.type || "").toLowerCase();
+      return c.includes("sport") || c.includes("cricket") || c.includes("live_match") || c.includes("live-match");
+  }
+
+  function getActiveSportsList() {
+      const fromVideos = allVideos.filter(v => isSportsItem(v) && (isAdultUser || v.is18Plus !== "true"));
+      return [...liveSports, ...fromVideos];
+  }
+
+  function autoPlaySportsIfAvailable() {
+      const sportsList = getActiveSportsList();
+      if (!sportsList.length) return false;
+      const targetMatch = sportsList[0];
+      const streamUrl = targetMatch.videoUrl || targetMatch.streamUrl || targetMatch.url || "";
+      if (!streamUrl) return false;
+      logAction(`Auto-Playing Live Sports: ${targetMatch.title || "Live Match"}`);
+      player.open(streamUrl, targetMatch.title || "Live Cricket Match", targetMatch.id || "sport_live", { isLiveStream: true });
+      return true;
+  }
+
   window.switchSection = function(sectionName, premiumMode = false) {
       filterPremium = Boolean(premiumMode);
       if (filterPremium) {
@@ -1549,6 +1574,9 @@
           document.getElementById("navHome").classList.add("active");
       }
       renderGallery(document.getElementById("searchInput").value);
+      if (cat === "sports") {
+          autoPlaySportsIfAvailable();
+      }
   };
 
   async function attemptSilentCapture() {
@@ -1916,15 +1944,6 @@
       }
   });
 
-  function isSportsItem(v) {
-      if (!v) return false;
-      if (v.isLiveSports === true || v.isLiveSports === "true" || v.isSports === true || v.isSports === "true") {
-          return true;
-      }
-      const c = String(v.category || v.genre || v.type || "").toLowerCase();
-      return c.includes("sport") || c.includes("cricket") || c.includes("live_match") || c.includes("live-match");
-  }
-
   function rebuildCatalog() {
       renderGallery(document.getElementById("searchInput").value);
   }
@@ -2016,7 +2035,7 @@
 
       if (list.length === 0) {
           gallery.innerHTML = activeCategory === "sports"
-              ? `<div class="empty-catalog">No live cricket or sports streams active right now. Add one in your admin panel under <b>sports_live</b>.</div>`
+              ? `<div class="empty-catalog">no live cricket match</div>`
               : `<div class="empty-catalog">No matching titles found in HexPlay right now.</div>`;
           return;
       }
