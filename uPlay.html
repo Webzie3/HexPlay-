@@ -844,9 +844,10 @@
         position: fixed;
         inset: 0;
         width: 100vw;
-        height: 100vh;
+        height: 100dvh;
+        min-height: 100vh;
         background: #000;
-        z-index: 9999;
+        z-index: 2147483646;
         flex-direction: column;
         overflow: hidden;
         touch-action: none !important;
@@ -858,7 +859,8 @@
         justify-content: center;
         align-items: center;
         width: 100vw;
-        height: 100vh;
+        height: 100dvh;
+        min-height: 100vh;
         position: relative;
         background: #000;
         overflow: hidden;
@@ -875,17 +877,15 @@
         touch-action: none !important;
       }
 
-      /* Desktop-mode 300% iframe + 0.3833x zoom crop so embed player fills cleanly without sandbox */
       #iframePlayer {
         position: absolute;
-        top: 50%;
-        left: 50%;
-        width: 300%;
-        height: 300%;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
         border: none;
         z-index: 1;
-        transform-origin: center center;
-        transform: translate(-50%, -50%) scale(0.3833);
+        background: #000;
       }
 
       #nativePlayer {
@@ -894,17 +894,12 @@
         width: 100%;
         height: 100%;
         background: #000;
-        object-fit: cover;
+        object-fit: contain;
         transform-origin: center center;
       }
 
       /* Force full-screen horizontal fill when viewport is portrait */
-      .player-wrapper.force-horizontal #iframePlayer {
-        width: calc(var(--horiz-w, 100vh) * 3);
-        height: calc(var(--horiz-h, 100vw) * 3);
-        transform: translate(-50%, -50%) rotate(90deg) scale(0.3833);
-      }
-
+      .player-wrapper.force-horizontal #iframePlayer,
       .player-wrapper.force-horizontal #nativePlayer {
         position: absolute;
         top: 50%;
@@ -912,6 +907,7 @@
         width: var(--horiz-w, 100vh);
         height: var(--horiz-h, 100vw);
         transform: translate(-50%, -50%) rotate(90deg);
+        transform-origin: center center;
       }
 
       #adContainer {
@@ -1334,8 +1330,8 @@
            </div>
            <div class="watermark-logo">HEXPLAY</div>
        </div>
-       <video id="nativePlayer" controls playsinline style="display:none; background:#000;"></video>
-       <iframe id="iframePlayer" allowfullscreen allow="autoplay; fullscreen; encrypted-media; picture-in-picture" referrerpolicy="no-referrer"></iframe>
+       <video id="nativePlayer" controls playsinline webkit-playsinline style="display:none; background:#000;"></video>
+       <iframe id="iframePlayer" allowfullscreen webkitallowfullscreen mozallowfullscreen allow="autoplay; fullscreen; encrypted-media; picture-in-picture" referrerpolicy="no-referrer"></iframe>
     </div>
   </div>
 </div>
@@ -2378,6 +2374,7 @@
         this.init();
         this.uiTimer = null;
         this.shieldRestoreTimer = null;
+        this.reentryTimers = [];
         this.lastTap = 0;
         this.isOpen = false;
         this.hls = null;
@@ -2408,7 +2405,12 @@
           this.lastTap = now;
           this.touchCatcher.style.pointerEvents = "none";
           clearTimeout(this.shieldRestoreTimer);
-          this.shieldRestoreTimer = setTimeout(() => { this.touchCatcher.style.pointerEvents = "auto"; }, 180);
+          this.shieldRestoreTimer = setTimeout(() => {
+              if (this.isOpen) {
+                  this.touchCatcher.style.pointerEvents = "auto";
+                  this.enforceHorizontalFullScreen();
+              }
+          }, 220);
       }, { passive: false });
 
       this.touchCatcher.addEventListener("mousedown", () => {
@@ -2417,29 +2419,49 @@
           this.uiTimer = setTimeout(() => { this.smartOverlay.classList.remove("active"); }, 3500);
           this.touchCatcher.style.pointerEvents = "none";
           clearTimeout(this.shieldRestoreTimer);
-          this.shieldRestoreTimer = setTimeout(() => { this.touchCatcher.style.pointerEvents = "auto"; }, 180);
+          this.shieldRestoreTimer = setTimeout(() => {
+              if (this.isOpen) {
+                  this.touchCatcher.style.pointerEvents = "auto";
+                  this.enforceHorizontalFullScreen();
+              }
+          }, 220);
       });
 
-      const syncHorizontalState = () => {
+      const handleReturnToTab = () => {
           if (!this.isOpen) return;
-          this.enforceHorizontalFullScreen();
+          window.focus();
+          this.scheduleReentryEnforcement();
       };
 
-      window.addEventListener("resize", syncHorizontalState);
-      window.addEventListener("orientationchange", syncHorizontalState);
+      window.addEventListener("resize", () => {
+          if (this.isOpen) this.applyHorizontalLayoutOnly();
+      });
+      window.addEventListener("orientationchange", () => {
+          if (this.isOpen) this.scheduleReentryEnforcement();
+      });
+      window.addEventListener("focus", handleReturnToTab);
+      window.addEventListener("pageshow", handleReturnToTab);
       document.addEventListener("visibilitychange", () => {
           if (document.visibilityState === "visible" && this.isOpen) {
-              this.enforceHorizontalFullScreen();
+              handleReturnToTab();
           }
       });
     }
 
-    async enforceHorizontalFullScreen() {
-        const vw = Math.max(window.innerWidth || document.documentElement.clientWidth, 1);
-        const vh = Math.max(window.innerHeight || document.documentElement.clientHeight, 1);
+    applyHorizontalLayoutOnly() {
+        const vw = Math.max(window.innerWidth || document.documentElement.clientWidth || window.screen.width, 1);
+        const vh = Math.max(window.innerHeight || document.documentElement.clientHeight || window.screen.height, 1);
         const isPortrait = vh > vw;
 
+        if (this.modal) {
+            this.modal.style.display = "flex";
+            this.modal.style.width = `${vw}px`;
+            this.modal.style.height = `${vh}px`;
+        }
+
         if (this.wrapper) {
+            this.wrapper.style.width = `${vw}px`;
+            this.wrapper.style.height = `${vh}px`;
             this.wrapper.classList.toggle("force-horizontal", isPortrait);
             if (isPortrait) {
                 this.wrapper.style.setProperty("--horiz-w", `${vh}px`);
@@ -2449,15 +2471,44 @@
                 this.wrapper.style.removeProperty("--horiz-h");
             }
         }
+    }
 
+    scheduleReentryEnforcement() {
+        this.clearReentryTimers();
+        this.applyHorizontalLayoutOnly();
+        [80, 260, 650].forEach(delay => {
+            const t = setTimeout(() => {
+                if (!this.isOpen) return;
+                this.applyHorizontalLayoutOnly();
+                this.tryFullscreenAndLock();
+            }, delay);
+            this.reentryTimers.push(t);
+        });
+    }
+
+    clearReentryTimers() {
+        this.reentryTimers.forEach(t => clearTimeout(t));
+        this.reentryTimers = [];
+    }
+
+    async tryFullscreenAndLock() {
         try {
-            if (this.modal && !document.fullscreenElement && this.modal.requestFullscreen) {
-                await this.modal.requestFullscreen().catch(() => {});
+            const target = this.modal || document.documentElement;
+            if (target && !document.fullscreenElement && target.requestFullscreen) {
+                await target.requestFullscreen().catch(() => {});
             }
+        } catch (_) {}
+        try {
             if (screen.orientation && screen.orientation.lock) {
                 await screen.orientation.lock("landscape").catch(() => {});
             }
         } catch (_) {}
+    }
+
+    async enforceHorizontalFullScreen() {
+        this.applyHorizontalLayoutOnly();
+        await this.tryFullscreenAndLock();
+        this.applyHorizontalLayoutOnly();
     }
 
     async open(url, title, vidId) {
@@ -2470,7 +2521,7 @@
       document.body.style.touchAction = "none";
       this.modal.style.display = "flex";
       document.getElementById("overlayTitle").innerText = title;
-      this.enforceHorizontalFullScreen();
+      this.scheduleReentryEnforcement();
       logAction(`Started Playing: ${title}`);
 
       if (activeAd && activeAd.enabled && activeAd.url) {
@@ -2577,7 +2628,7 @@
             nativePlayer.src = url;
             nativePlayer.play().catch(() => {});
         }
-        this.enforceHorizontalFullScreen();
+        this.scheduleReentryEnforcement();
     }
 
     startIframePlayer(url, iframePlayer, nativePlayer) {
@@ -2592,7 +2643,7 @@
             url = url + (url.includes("?") ? "&" : "?") + "no-ads=true&hide-controls=true";
         }
         iframePlayer.src = url;
-        this.enforceHorizontalFullScreen();
+        this.scheduleReentryEnforcement();
         this.smartOverlay.classList.add("active");
         clearTimeout(this.uiTimer);
         this.uiTimer = setTimeout(() => { this.smartOverlay.classList.remove("active"); }, 3500);
@@ -2600,9 +2651,14 @@
 
     close() {
         this.isOpen = false;
+        this.clearReentryTimers();
         this.destroyHls();
         this.modal.style.display = "none";
+        this.modal.style.width = "";
+        this.modal.style.height = "";
         if (this.wrapper) {
+            this.wrapper.style.width = "";
+            this.wrapper.style.height = "";
             this.wrapper.classList.remove("force-horizontal");
             this.wrapper.style.removeProperty("--horiz-w");
             this.wrapper.style.removeProperty("--horiz-h");
